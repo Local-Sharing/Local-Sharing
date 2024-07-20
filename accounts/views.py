@@ -1,16 +1,16 @@
-from django.shortcuts import render
-from django.contrib.auth import logout
+from django.shortcuts import get_object_or_404
+from accounts.models import User
 from rest_framework.views import APIView
-from accounts.serializers import SignupSerializer
+from accounts.serializers import UserSerializer
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
 from rest_framework_simplejwt.tokens import RefreshToken
 
 
 class SignupAPIView(APIView):
     # 회원가입
     def post(self, request):
-        serializer = SignupSerializer(data=request.data)
+        serializer = UserSerializer(data=request.data)
         if serializer.is_valid():
             user = serializer.save()
             if user:
@@ -31,3 +31,13 @@ class LogoutAPIView(APIView):
         except Exception as e:
             print(f"Exception: {e}") 
             return Response(status=400)
+        
+
+class ProfileAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    # 프로필 조회
+    def get(self, request, pk):
+        user = get_object_or_404(User, pk=pk)
+        serializer = UserSerializer(user)
+        return Response(serializer.data, status=200)

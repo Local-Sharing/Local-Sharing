@@ -12,4 +12,5 @@ urlpatterns = [
     path('login/', TokenObtainPairView.as_view(), name='login'),
     path('token/', TokenRefreshView.as_view(), name='token_refresh'),
     path('logout/', views.LogoutAPIView.as_view(), name='logout'),
+    path('profile/<int:pk>/', views.ProfileAPIView.as_view(), name='profile'),
 ]

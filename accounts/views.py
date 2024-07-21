@@ -47,6 +47,8 @@ class ProfileAPIView(APIView):
 class ProfileUpdateAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
+    
+
     # 프로필 수정
     def put(self, request, pk):
         user = get_object_or_404(get_user_model(), pk=pk)

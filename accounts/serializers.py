@@ -44,7 +44,6 @@ class ProfileUpdateSerialize(serializers.ModelSerializer):
         instance.nickname = validated_data.get('nickname', instance.nickname)
         instance.image = validated_data.get('image', instance.image)
         instance.save()
-
         return instance
 
 
@@ -52,3 +51,13 @@ class ChangePasswordSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ['password']
+
+    def validate_password(self, value):
+        if len(value) < 8:
+            raise serializers.ValidationError('비밀번호는 8글자 이상이어야 합니다.')
+        return value
+    
+    def update(self, instance, validated_data):
+        instance.set_password(validated_data['password'])
+        instance.save()
+        return instance

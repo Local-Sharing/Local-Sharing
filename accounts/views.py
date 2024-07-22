@@ -2,7 +2,7 @@ from django.shortcuts import get_object_or_404
 from accounts.models import User
 from django.contrib.auth import get_user_model
 from rest_framework.views import APIView
-from accounts.serializers import UserSerializer
+from accounts.serializers import UserSerializer, ProfileUpdateSerialize
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -17,7 +17,7 @@ class SignupAPIView(APIView):
             if user:
                 return Response(serializer.data, status=200)
         return Response(serializer.errors, status=400)
-
+    
 
 class LogoutAPIView(APIView):
     permission_classes = [IsAuthenticated]
@@ -32,7 +32,7 @@ class LogoutAPIView(APIView):
         except Exception as e:
             print(f"Exception: {e}") 
             return Response(status=400)
-        
+
 
 class ProfileAPIView(APIView):
     permission_classes = [IsAuthenticated]
@@ -47,12 +47,26 @@ class ProfileAPIView(APIView):
 class ProfileUpdateAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
-    
-
     # 프로필 수정
     def put(self, request, pk):
         user = get_object_or_404(get_user_model(), pk=pk)
 
+        # 사용자 pk와 요청 pk가 일치하는지 확인
+        if request.user.pk != user.pk:
+            return Response({'error' : '권한이 없습니다.'}, status=403)
+        
+        serializer = ProfileUpdateSerialize(user, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data)
+
+
+class ChangePasswordAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+    
+    # 비밀번호 변경
+    def put(self, request, pk):
+        pass
 
 class UserDeleteAPIView(APIView):
     permission_classes = [IsAuthenticated]

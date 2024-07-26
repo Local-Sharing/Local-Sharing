@@ -45,9 +45,9 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt.token_blacklist',
 
     'accounts',
+    'posts',
     # 'maps',
     # 'weather',
-    # 'posts',
     # 'traffic',
 ]
 
@@ -116,7 +116,8 @@ REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
-    
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.LimitOffsetPagination',
+    'PAGE_SIZE': 5
 }
 
 
@@ -147,11 +148,13 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/4.2/howto/static-files/
 
 STATIC_URL = '/static/'
-STATIC_ROOT = BASE_DIR / 'staticfiles'
+# 도커나 서버
+STATIC_ROOT = BASE_DIR / 'staticfiles' 
 STATICFILES_DIRS = [BASE_DIR/'static']
 
 
 MEDIA_URL = '/media/'
+# 도커나 서버
 MEDIA_ROOT = BASE_DIR / 'media'
 
 

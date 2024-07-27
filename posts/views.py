@@ -63,8 +63,17 @@ class PostDetailAPIView(APIView):
     def get(self, request, post_id):
         post = self.get_object(post_id)
         serializer = PostSerializer(post)
-        return Response(serializer.data, status=200)
+        data = serializer.data
 
+        # 사용자가 좋아요 눌렀는지 여부 확인
+        like = False
+        if request.user.is_authenticated:
+            if request.user.id in post.like.values_list('id', flat=True): 
+                like = True
+        data = {'data':data, 'like':like}
+        return Response(data, status=200)
+
+        
     # 게시글 수정
     def put(self, request, post_id):
         post = self.get_object(post_id)
@@ -81,4 +90,18 @@ class PostDetailAPIView(APIView):
         if post.user_id != request.user:
             return Response({'detail': '권한이 없습니다.'}, status=403)
         post.delete()
+        return Response(status=200)
+
+
+class PostLikeAPIView(APIView):
+    def get_object(self, post_id):
+        return get_object_or_404(Post, pk=post_id)
+
+    # 게시글 좋아요
+    def post(self, request, post_id):
+        post = self.get_object(post_id)
+        if post.like.filter(pk=request.user.id).exists():
+            post.like.remove(request.user.id)
+        else:
+            post.like.add(request.user.id)
         return Response(status=200)

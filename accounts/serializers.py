@@ -17,6 +17,38 @@ class UserSerializer(serializers.ModelSerializer):
             nickname = validated_data['nickname'],
             gender = validated_data['gender'],
             age = validated_data['age'],
-            # image 추가
+            image = validated_data.get('image')# image 추가
         )
         return user
+    
+
+class ProfileUpdateSerialize(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ['nickname', 'email', 'image']
+
+    def validate_email(self, value):
+        user = self.instance
+        if User.objects.exclude(pk=user.pk).filter(email=value).exists():
+            raise serializers.ValidationError({"email": "사용중인 이메일 입니다."})
+        return value
+    
+    def validate_nickname(self, value):
+        user = self.instance
+        if User.objects.exclude(pk=user.pk).filter(nickname=value).exists():
+            raise serializers.ValidationError({"nickname": "사용중인 닉네임 입니다."})
+        return value
+    
+    def update(self, instance, validated_data):
+        instance.email = validated_data.get('email', instance.email)
+        instance.nickname = validated_data.get('nickname', instance.nickname)
+        instance.image = validated_data.get('image', instance.image)
+        instance.save()
+
+        return instance
+
+
+class ChangePasswordSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ['password']

@@ -4,7 +4,6 @@ from posts.models import Post, Comment
 from posts.serializers import PostSerializer
 from rest_framework.permissions import IsAuthenticatedOrReadOnly, IsAuthenticated
 from rest_framework.response import Response
-import uuid
 from urllib.parse import unquote
 from django.db.models import Q, Count
 
@@ -66,11 +65,20 @@ class PostDetailAPIView(APIView):
         serializer = PostSerializer(post)
         return Response(serializer.data, status=200)
 
-
     # 게시글 수정
     def put(self, request, post_id):
-        pass
+        post = self.get_object(post_id)
+        if post.user_id != request.user:
+            return Response({'detail': '권한이 없습니다.'}, status=403)
+        serializer = PostSerializer(post, data=request.data, partial=True)
+        if serializer.is_valid(raise_exception=True):
+            serializer.save()
+            return Response(serializer.data)
 
     # 게시글 삭제
     def delete(self, request, post_id):
-        pass
+        post = self.get_object(post_id)
+        if post.user_id != request.user:
+            return Response({'detail': '권한이 없습니다.'}, status=403)
+        post.delete()
+        return Response(status=200)

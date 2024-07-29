@@ -1,6 +1,7 @@
 from django.shortcuts import render, get_object_or_404
 from rest_framework.views import APIView
 from posts.models import Post, Comment
+from accounts.models import User
 from posts.serializers import PostSerializer
 from rest_framework.permissions import IsAuthenticatedOrReadOnly, IsAuthenticated
 from rest_framework.response import Response
@@ -105,3 +106,21 @@ class PostLikeAPIView(APIView):
         else:
             post.like.add(request.user.id)
         return Response(status=200)
+
+
+class UserPostView(APIView):
+    # 유저가 작성한 게시글 목록
+    def get(self, request, user_id):
+        user = get_object_or_404(User, pk=user_id)
+        post = Post.objects.filter(user_id=user)
+        serilaizer = PostSerializer(post, many=True)
+        return Response(serilaizer.data, status=200)
+
+
+class UserLikePostAPIView(APIView):
+    # 사용자가 좋아요 누른 게시글 조회
+    def get(self, request, user_id):
+        user = get_object_or_404(User, pk=user_id)
+        like_post = user.post_like.all()
+        serializer = PostSerializer(like_post, many=True)
+        return Response(serializer.data, status=200)

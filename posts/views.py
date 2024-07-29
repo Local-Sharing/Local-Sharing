@@ -2,7 +2,7 @@ from django.shortcuts import render, get_object_or_404
 from rest_framework.views import APIView
 from posts.models import Post, Comment
 from accounts.models import User
-from posts.serializers import PostSerializer
+from posts.serializers import PostSerializer, CommentSerializer
 from rest_framework.permissions import IsAuthenticatedOrReadOnly, IsAuthenticated
 from rest_framework.response import Response
 from urllib.parse import unquote
@@ -71,9 +71,14 @@ class PostDetailAPIView(APIView):
         if request.user.is_authenticated:
             if request.user.id in post.like.values_list('id', flat=True): 
                 like = True
+
+        # 댓글 조회
+        comments = Comment.objects.filter(post_id=post_id)
+        comment_serializer = CommentSerializer(comments, many=True)
+        data['comments'] = comment_serializer.data
+
         data = {'data':data, 'like':like}
         return Response(data, status=200)
-
         
     # 게시글 수정
     def put(self, request, post_id):
@@ -92,6 +97,14 @@ class PostDetailAPIView(APIView):
             return Response({'detail': '권한이 없습니다.'}, status=403)
         post.delete()
         return Response(status=200)
+    
+    # 댓글 작성
+    def post(self, request, post_id):
+        post = self.get_object(post_id)
+        serializer = CommentSerializer(data=request.data, context={'request': request, 'post': post})
+        if serializer.is_valid(raise_exception=True):
+            serializer.save()
+            return Response(serializer.data, status=200)
 
 
 class PostLikeAPIView(APIView):

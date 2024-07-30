@@ -2,7 +2,7 @@ from django.shortcuts import get_object_or_404
 from accounts.models import User
 from django.contrib.auth import get_user_model
 from rest_framework.views import APIView
-from accounts.serializers import UserSerializer, ProfileUpdateSerialize
+from accounts.serializers import UserSerializer, ProfileUpdateSerialize, ChangePasswordSerializer
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -63,10 +63,18 @@ class ProfileUpdateAPIView(APIView):
 
 class ChangePasswordAPIView(APIView):
     permission_classes = [IsAuthenticated]
-    
+
     # 비밀번호 변경
     def put(self, request, pk):
-        pass
+        user = request.user
+        serializer = ChangePasswordSerializer(user, data=request.data)
+
+        if serializer.is_valid():
+            serializer.save()
+            return Response({'message' : '비밀번호가 변경되었습니다.'}, status=200)
+        else:
+            return Response(serializer.errors, status=400)
+
 
 class UserDeleteAPIView(APIView):
     permission_classes = [IsAuthenticated]

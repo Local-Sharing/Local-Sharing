@@ -107,6 +107,25 @@ class PostDetailAPIView(APIView):
             return Response(serializer.data, status=200)
 
 
+class CommentAPIView(APIView):
+    def get_object(self, comment_id):
+        return get_object_or_404(Comment, pk=comment_id)
+    
+    # 댓글 수정
+    def put(self, request, comment_id):
+        comment = self.get_object(comment_id)
+        serializer = CommentSerializer(comment, data=request.data, partial=True)
+        if serializer.is_valid(raise_exception=True):
+            serializer.save()
+            return Response(serializer.data)
+
+    # 댓글 삭제
+    def delete(self, request, comment_id):
+        comment = self.get_object(comment_id)
+        comment.delete()
+        return Response(status=200)
+
+
 class PostLikeAPIView(APIView):
     def get_object(self, post_id):
         return get_object_or_404(Post, pk=post_id)

@@ -7,9 +7,7 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     path('api/accounts/', include('accounts.urls')),
     path('api/posts/', include('posts.urls')),
-    # path('api/maps/', include('maps.urls')),
-    # path('api/traffic/', include('traffic.urls')),
-    # path('api/weather/', include('weather.urls')),
+    path('api/maps/', include('maps.urls')),
 ] 
 
 if settings.DEBUG:

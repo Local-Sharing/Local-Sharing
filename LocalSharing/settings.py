@@ -46,9 +46,7 @@ INSTALLED_APPS = [
 
     'accounts',
     'posts',
-    # 'maps',
-    # 'weather',
-    # 'traffic',
+    'maps',
 ]
 
 MIDDLEWARE = [

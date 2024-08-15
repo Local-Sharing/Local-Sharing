@@ -1,6 +1,7 @@
 import requests
+from openai import OpenAI
 from django.shortcuts import render, get_object_or_404
-from LocalSharing.config import KAKAO_REST_API_KEY
+from LocalSharing.config import KAKAO_REST_API_KEY, OEPN_AI_KEY
 from rest_framework.views import APIView
 from maps.models import Map, MapLikeUser
 from maps.serializers import MapSerializer, MapLikeUserSerializer
@@ -16,6 +17,23 @@ def kakao_rest_api(longitude, latitude):
         return response.json()
     else:
         return None
+
+
+client = OpenAI(
+    api_key=OEPN_AI_KEY,
+)
+
+completion = client.chat.completions.create(
+    model="gpt-4o-mini",
+    messages=[
+        {"role": "system", "content": "You are a helpful assistant."},
+        {
+            "role": "user",
+            "content": "Write a haiku about recursion in programming."
+        }
+    ]
+)
+print(completion.choices[0].message)
 
 
 class MapListAPIView(APIView):

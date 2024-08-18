@@ -4,6 +4,10 @@ from accounts.models import User
 class Map(models.Model):
     title = models.CharField(max_length=50)
     content = models.TextField()
+    region = models.CharField(max_length=100)  
+    weather = models.CharField(max_length=50)  
+    category = models.CharField(max_length=50) 
+    created_at = models.DateTimeField(auto_now_add=True)  
 
 
 class MapLikeUser(models.Model):

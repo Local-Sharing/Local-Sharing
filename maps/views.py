@@ -3,6 +3,7 @@ from openai import OpenAI
 from django.shortcuts import render, get_object_or_404
 from LocalSharing.config import KAKAO_REST_API_KEY, OPEN_AI_KEY
 from datetime import datetime, timedelta
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from maps.models import Map, MapLikeUser
@@ -10,10 +11,13 @@ from maps.serializers import MapSerializer, MapSearchSerializer, MapLikeUserSeri
 
 
 # KAKAO API를 사용하여 위치 정보 반환
-def kakao_rest_api(longitude, latitude):
-    url = 'https://dapi.kakao.com/v2/local/geo/coord2regioncode.json'
+def kakao_rest_api(region, category):
+    url = 'https://dapi.kakao.com/v2/local/search/keyword.json'
     headers = {'Authorization': f'KakaoAK {KAKAO_REST_API_KEY}'}
-    params = {'x': longitude, 'y': latitude}
+    params = {
+        'query': f'{region} {category}',
+        'size': 5 
+    }
 
     response = requests.get(url, headers=headers, params=params)
     if response.status_code == 200:
@@ -49,6 +53,7 @@ def map_search(region, weather, category=None):
 
     return search_results.filter(created_at__gte = one_year_ago)
 
+
 class MapListAPIView(APIView):
     # 검색
     def post(self, request):
@@ -57,16 +62,27 @@ class MapListAPIView(APIView):
             region = serializer.validated_data['region']
             weather = serializer.validated_data['weather']
             category = serializer.validated_data.get('category')
-            longitude = serializer.validated_data['longitude']
-            latitude = serializer.validated_data['latitude']
 
             # KAKAO API로 위치 검색
-            location_data = kakao_rest_api(longitude, latitude)
-            if not location_data:
+            places = kakao_rest_api(region, category)
+            if not places:
                 return Response({'error' : '위치 데이터를 찾지 못했습니다.'}, status=400)
             
-            # OpenAI API로 카테고리 게시글 검색
-            openai_data = openai_api_search(region, weather, category)
+            # 위치 리스트 반환
+            if len(places['documents']) > 1:
+                return Response({'places': places['documents']}, status=200)
+            
+            # 한개의 장소만 찾았다면 해당 장소를 Map 모델에 저장
+            place = places['documents'][0]
+            map_instance, created = Map.objects.get_or_create(
+                title=place['place_name'],
+                region=place['address_name'],
+                weather=weather,
+                category=category,
+                longitude=place['x'],
+                latitude=place['y'],
+                defaults={'url': place.get('place_url', '')}
+            )
 
             # 지도 검색 및 필터링
             search_result = map_search(region, weather, category)
@@ -75,24 +91,53 @@ class MapListAPIView(APIView):
             
             map_serializer = MapSerializer(search_result, many=True)
             return Response({
-                'location_data' : location_data,
-                'openai_data' : openai_data,
-                'posts' : map_serializer.data
+                'location': place,
+                'map_id': map_instance.id,
+                'posts': map_serializer.data
             }, status=200)
         return Response(serializer.errors, status=400)
 
 
+class MapSaveAPIView(APIView):
+    def post(self, request):
+        place_data = request.data.get('place')
+        if not place_data:
+            return Response({'error': '장소 정보가 필요합니다.'}, status=400)
+        
+        map_instance, created = Map.objects.get_or_create(
+            title=place_data['place_name'],
+            region=place_data['address_name'],
+            longitude=place_data['x'],
+            latitude=place_data['y'],
+            defaults={'url': place_data.get('place_url', '')}
+        )
+        
+        if created:
+            return Response({'message': '장소가 저장되었습니다.', 'map_id': map_instance.id}, status=201)
+        else:
+            return Response({'message': '이미 존재하는 장소입니다.', 'map_id': map_instance.id}, status=200)
+
+
 class MapLikeAPIView(APIView):
-    # 특정 지역 좋아요 목록
+    permission_classes = [IsAuthenticated]
+    
     def post(self, request, map_id):
-        serializer = MapLikeUserSerializer(data=request.data, context={'request':request})
-        if serializer.is_valid():
-            like = serializer.save()
-            if like:
-                return Response({'message' : '좋아요'}, status=200)
-            else:
-                return Response({'message' : '좋아요 삭제'}, status=200)
-        return Response(serializer.errors, status=400)
+        map_instance = get_object_or_404(Map, id=map_id)
+        user = request.user
+
+        # 좋아요가 이미 존재하는지 확인
+        try:
+            like = MapLikeUser.objects.get(user=user, map=map_instance)
+            like.delete()
+            return Response({'message': '좋아요 취소'}, status=200)
+        except MapLikeUser.DoesNotExist:
+            # 좋아요가 없는 경우 추가
+            data = {'map': map_instance.id}
+            serializer = MapLikeUserSerializer(data=data, context={'request': request})
+            if serializer.is_valid():
+                serializer.save()
+                return Response({'message': '좋아요'}, status=200)
+            return Response(serializer.errors, status=400)
 
 
 class UserProfileAPIView(APIView):

@@ -3,10 +3,13 @@ from accounts.models import User
 
 class Map(models.Model):
     title = models.CharField(max_length=50)
-    content = models.TextField()
+    content = models.TextField(null=True, blank=True)
     region = models.CharField(max_length=100)  
     weather = models.CharField(max_length=50)  
     category = models.CharField(max_length=50) 
+    longitude = models.CharField(max_length=50, null=True, blank=True) 
+    latitude = models.CharField(max_length=50, null=True, blank=True)
+    url = models.URLField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)  
 
 

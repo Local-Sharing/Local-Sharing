@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from maps.models import Map, MapLikeUser
+from maps.models import Map, MapLikeUser, WeatherCategoryMapping
 from maps.serializers import MapSerializer, MapSearchSerializer, MapLikeUserSerializer
 
 
@@ -14,9 +14,10 @@ from maps.serializers import MapSerializer, MapSearchSerializer, MapLikeUserSeri
 def kakao_rest_api(region, category):
     url = 'https://dapi.kakao.com/v2/local/search/keyword.json'
     headers = {'Authorization': f'KakaoAK {KAKAO_REST_API_KEY}'}
+    query = f'{region} {category}' if category else region
     params = {
-        'query': f'{region} {category}',
-        'size': 5 
+        'query': query,
+        'size': 10
     }
 
     response = requests.get(url, headers=headers, params=params)
@@ -27,18 +28,18 @@ def kakao_rest_api(region, category):
 
 
 # OpenAI API를 사용하여 게시글 검색
-def openai_api_search(region, weather, category):
-    client = OpenAI(api_key=OPEN_AI_KEY)
-    completion = client.chat.completions.create(
-        model="gpt-4o-mini",
-        messages=[
-            {"role": "system", "content": "You are a helpful assistant."},
-            {"role": "user", 
-            "content": "Search for posts in the category {category} within the region {region} and with weather condition {weather}."
-            }
-        ]
-    )
-    return completion.choices[0].message.get('content', '')
+# def openai_api_search(region, weather, category):
+#     client = OpenAI(api_key=OPEN_AI_KEY)
+#     completion = client.chat.completions.create(
+#         model="gpt-4o-mini",
+#         messages=[
+#             {"role": "system", "content": "You are a helpful assistant."},
+#             {"role": "user", 
+#             "content": f"Can you suggest some blog posts or resources in the {category} category located in {region} with {weather} weather conditions?"
+#             }
+#         ]
+#     )
+#     return completion.choices[0].message.content
 
 
 # 지역, 날씨 조건을 기반으로 최근 1년 내의 게시글 필터링
@@ -47,12 +48,16 @@ def map_search(region, weather, category=None):
     one_year_ago = datetime.now() - timedelta(days=365)
 
     # 지역과 날씨 조건으로 게시글 검색
-    search_results = Map.objects.filter(region=region, weather=weather)
-    if category:
-        search_results = search_results.filter(category=category)
+    # values_list : 값을 튜플 형태로 리스트에 담아 반환 // 예 : [('관광명소',), ('음식점',), ('쇼핑',)]
+    # flat=True : 반환되는 리스트를 평평하게 만들어줌 -> 튜플이 아닌 일반 값으로 리스트를 구성하게 한다. 한개의 필드만 요청했을 때만 사용 가능 // 예 : ['관광명소', '음식점', '쇼핑']
+    if category is None:
+        categories = WeatherCategoryMapping.objects.filter(weather=weather).values_list('category', flat=True)
+    else:
+        categories = [category]
 
-    return search_results.filter(created_at__gte = one_year_ago)
-
+    # category__in=categories : category 필드가 categories 리스트 내 하나의 값을 갖는 Mao 객체를 찾음
+    search_result = Map.objects.filter(region=region, weather=weather, category__in=categories)
+    return search_result.filter(created_at__gte=one_year_ago)
 
 class MapListAPIView(APIView):
     # 검색
@@ -66,11 +71,14 @@ class MapListAPIView(APIView):
             # KAKAO API로 위치 검색
             places = kakao_rest_api(region, category)
             if not places:
-                return Response({'error' : '위치 데이터를 찾지 못했습니다.'}, status=400)
-            
+                return Response({'error' : '위치 데이터를 찾지 못했습니다.'}, status=400)        
+
             # 위치 리스트 반환
             if len(places['documents']) > 1:
                 return Response({'places': places['documents']}, status=200)
+            
+            if len(places['documents']) == 0:
+                return Response({'error': '해당 조건에 맞는 장소를 찾지 못했습니다.'}, status=404)
             
             # 한개의 장소만 찾았다면 해당 장소를 Map 모델에 저장
             place = places['documents'][0]
@@ -99,6 +107,8 @@ class MapListAPIView(APIView):
 
 
 class MapSaveAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
     def post(self, request):
         place_data = request.data.get('place')
         if not place_data:
@@ -141,6 +151,8 @@ class MapLikeAPIView(APIView):
 
 
 class UserProfileAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
     def get(self, request):
         user = request.user
         liked_maps = MapLikeUser.objects.filter(user=user)
@@ -150,4 +162,3 @@ class UserProfileAPIView(APIView):
 
         serializer = MapSerializer(liked_maps_data, many=True)
         return Response(serializer.data, status=200)
-

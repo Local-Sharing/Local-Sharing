@@ -146,9 +146,9 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/4.2/howto/static-files/
 
 STATIC_URL = '/static/'
+STATICFILES_DIRS = [BASE_DIR/'static']
 # 도커나 서버
 # STATIC_ROOT = BASE_DIR / 'staticfiles' 
-# STATICFILES_DIRS = [BASE_DIR/'static']
 
 
 MEDIA_URL = '/media/'

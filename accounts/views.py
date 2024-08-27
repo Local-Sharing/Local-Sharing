@@ -1,6 +1,7 @@
 from django.shortcuts import get_object_or_404
 from accounts.models import User
 from django.contrib.auth import get_user_model
+from django.views.generic import TemplateView
 from rest_framework.views import APIView
 from accounts.serializers import UserSerializer, ProfileUpdateSerialize, ChangePasswordSerializer
 from rest_framework.response import Response
@@ -17,6 +18,9 @@ class SignupAPIView(APIView):
             if user:
                 return Response(serializer.data, status=200)
         return Response(serializer.errors, status=400)
+
+class SignupView(TemplateView):
+    template_name = "accounts/signup.html"
     
 
 class LogoutAPIView(APIView):

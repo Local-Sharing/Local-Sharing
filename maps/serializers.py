@@ -12,7 +12,7 @@ class MapSerializer(serializers.ModelSerializer):
 class MapSearchSerializer(serializers.Serializer):
     region = serializers.CharField(max_length = 100)
     weather = serializers.CharField(max_length=50)
-    category = serializers.CharField(max_length=50, required=False)
+    category = serializers.CharField(max_length=50, required=True)
     longitude = serializers.FloatField(required=False)
     latitude = serializers.FloatField(required=False)
 

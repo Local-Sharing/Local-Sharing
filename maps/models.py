@@ -1,6 +1,15 @@
 from django.db import models
 from accounts.models import User  
 
+
+class WeatherCategoryMapping(models.Model):
+    weather = models.CharField(max_length=50)
+    category = models.CharField(max_length=50)
+
+    def __str__(self):
+        return f"{self.weather} - {self.category}"  
+
+
 class Map(models.Model):
     title = models.CharField(max_length=50)
     content = models.TextField(null=True, blank=True)

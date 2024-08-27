@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from maps.models import Map, MapLikeUser
+from maps.models import Map, MapLikeUser, WeatherCategoryMapping
 from maps.serializers import MapSerializer, MapSearchSerializer, MapLikeUserSerializer
 
 
@@ -16,7 +16,7 @@ def kakao_rest_api(region, category):
     headers = {'Authorization': f'KakaoAK {KAKAO_REST_API_KEY}'}
     params = {
         'query': f'{region} {category}',
-        'size': 5 
+        'size': 10
     }
 
     response = requests.get(url, headers=headers, params=params)
@@ -27,18 +27,18 @@ def kakao_rest_api(region, category):
 
 
 # OpenAI API를 사용하여 게시글 검색
-def openai_api_search(region, weather, category):
-    client = OpenAI(api_key=OPEN_AI_KEY)
-    completion = client.chat.completions.create(
-        model="gpt-4o-mini",
-        messages=[
-            {"role": "system", "content": "You are a helpful assistant."},
-            {"role": "user", 
-            "content": "Search for posts in the category {category} within the region {region} and with weather condition {weather}."
-            }
-        ]
-    )
-    return completion.choices[0].message.get('content', '')
+# def openai_api_search(region, weather, category):
+#     client = OpenAI(api_key=OPEN_AI_KEY)
+#     completion = client.chat.completions.create(
+#         model="gpt-4o-mini",
+#         messages=[
+#             {"role": "system", "content": "You are a helpful assistant."},
+#             {"role": "user", 
+#             "content": f"Can you suggest some blog posts or resources in the {category} category located in {region} with {weather} weather conditions?"
+#             }
+#         ]
+#     )
+#     return completion.choices[0].message.content
 
 
 # 지역, 날씨 조건을 기반으로 최근 1년 내의 게시글 필터링
@@ -46,12 +46,8 @@ def map_search(region, weather, category=None):
     # datetime : 현재시간 / timedelta : datetime 객체의 더하기, 빼기 수행 가능
     one_year_ago = datetime.now() - timedelta(days=365)
 
-    # 지역과 날씨 조건으로 게시글 검색
-    search_results = Map.objects.filter(region=region, weather=weather)
-    if category:
-        search_results = search_results.filter(category=category)
-
-    return search_results.filter(created_at__gte = one_year_ago)
+    search_result = Map.objects.filter(region=region, weather=weather, category=category)
+    return search_result.filter(created_at__gte=one_year_ago)
 
 
 class MapListAPIView(APIView):
@@ -66,39 +62,24 @@ class MapListAPIView(APIView):
             # KAKAO API로 위치 검색
             places = kakao_rest_api(region, category)
             if not places:
-                return Response({'error' : '위치 데이터를 찾지 못했습니다.'}, status=400)
+                return Response({'error' : '위치 데이터를 찾지 못했습니다.'}, status=400)        
+
+            if not places['documents']:
+                return Response({'error': '해당 조건에 맞는 장소를 찾지 못했습니다.'}, status=404)
             
             # 위치 리스트 반환
-            if len(places['documents']) > 1:
-                return Response({'places': places['documents']}, status=200)
-            
-            # 한개의 장소만 찾았다면 해당 장소를 Map 모델에 저장
-            place = places['documents'][0]
-            map_instance, created = Map.objects.get_or_create(
-                title=place['place_name'],
-                region=place['address_name'],
-                weather=weather,
-                category=category,
-                longitude=place['x'],
-                latitude=place['y'],
-                defaults={'url': place.get('place_url', '')}
-            )
+            # if len(places['documents']) > 1:
+            #     return Response({'places': places['documents']}, status=200)
 
-            # 지도 검색 및 필터링
-            search_result = map_search(region, weather, category)
-            if not search_result.exists():
-                return Response({'message':'게시글이 없습니다.'}, status=400)
+        # 장소 목록 반환
+            return Response({'places' : places['documents']}, status=200)
             
-            map_serializer = MapSerializer(search_result, many=True)
-            return Response({
-                'location': place,
-                'map_id': map_instance.id,
-                'posts': map_serializer.data
-            }, status=200)
         return Response(serializer.errors, status=400)
 
 
 class MapSaveAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
     def post(self, request):
         place_data = request.data.get('place')
         if not place_data:
@@ -141,6 +122,8 @@ class MapLikeAPIView(APIView):
 
 
 class UserProfileAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
     def get(self, request):
         user = request.user
         liked_maps = MapLikeUser.objects.filter(user=user)
@@ -150,4 +133,3 @@ class UserProfileAPIView(APIView):
 
         serializer = MapSerializer(liked_maps_data, many=True)
         return Response(serializer.data, status=200)
-

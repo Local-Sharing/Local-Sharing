@@ -7,4 +7,5 @@ urlpatterns = [
     path('<int:map_id>/like/', views.MapLikeAPIView.as_view(), name='map-like'),
     path('save/', views.MapSaveAPIView.as_view(), name='map-create'),
     path('user/profile/', views.UserProfileAPIView.as_view(), name='maps-user-profile'),
+    path('blog-search/', views.BlogPostSearchAPIView.as_view(), name='blog-posts-search'),
 ]

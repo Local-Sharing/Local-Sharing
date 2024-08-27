@@ -1,7 +1,9 @@
 from django.shortcuts import get_object_or_404
+from django.http import JsonResponse
 from accounts.models import User
 from django.contrib.auth import get_user_model
 from django.views.generic import TemplateView
+from django.views.decorators.csrf import csrf_exempt
 from rest_framework.views import APIView
 from accounts.serializers import UserSerializer, ProfileUpdateSerialize, ChangePasswordSerializer
 from rest_framework.response import Response
@@ -21,7 +23,21 @@ class SignupAPIView(APIView):
 
 class SignupView(TemplateView):
     template_name = "accounts/signup.html"
+
+class LoginView(TemplateView):
+    template_name = "accounts/login.html"
     
+@csrf_exempt
+def store_tokens(request):
+    if request.method == "POST":
+        access_token = request.POST.get('access')
+        refresh_token = request.POST.get('refresh')
+    
+        request.session['access_token'] = access_token
+        request.session['refresh_token'] = refresh_token
+
+        return JsonResponse({'message': '정상 처리 되었습니다.'}, status=200)
+    return JsonResponse({'error': '토큰이 제공되지 않았습니다.'}, status=400)
 
 class LogoutAPIView(APIView):
     permission_classes = [IsAuthenticated]

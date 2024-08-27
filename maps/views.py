@@ -27,12 +27,14 @@ def kakao_rest_api(region, category):
 
 
 # 네이버 블로그 API 호출
-def naver_blog_search(query):
+def naver_blog_search(place_name, category):
     url = 'https://openapi.naver.com/v1/search/blog.json'
     headers = {
         'X-Naver-Client-Id': NAVER_CLIENT_ID,
         'X-Naver-Client-Secret': NAVER_CLIENT_SECRET
     }
+    query = f"{place_name} {category}"
+    
     params = {
         'query' : query,
         'dislplay' : 20,    # 한번에 가져올 블로그 게시글 수
@@ -61,17 +63,30 @@ def naver_blog_search(query):
 #     return completion.choices[0].message.content
 
 
-# 지역, 날씨 조건을 기반으로 최근 1년 내의 게시글 필터링
-def map_search(region, weather, category=None):
-    # datetime : 현재시간 / timedelta : datetime 객체의 더하기, 빼기 수행 가능
-    one_year_ago = datetime.now() - timedelta(days=365)
-
+# 지역, 날씨, 카테고리 조건을 기반으로 Map 객체 필터링
+def map_search(region, weather, category):
     search_result = Map.objects.filter(region=region, weather=weather, category=category)
-    return search_result.filter(created_at__gte=one_year_ago)
+    return search_result
+
+
+def filter_posts(posts):
+    one_year_ago = datetime.now() - timedelta(days=365)
+    filtered_posts = []
+
+    for post in posts['items']:
+        post_date = datetime.strptime(post['postdate'], "%Y%m%d")
+        if post_date >= one_year_ago:
+            filtered_posts.append({
+                'title': post['title'],
+                'description': post['description'],
+                'link': post['link'],
+                'date': post_date
+            })
+
+    return filtered_posts
 
 
 class MapListAPIView(APIView):
-
     # 메인 화면 접속 시 서울역 페이지 반환
     def get(self, request):
         default_region = '서울역'
@@ -94,15 +109,27 @@ class MapListAPIView(APIView):
 
             if not places['documents']:
                 return Response({'error': '해당 조건에 맞는 장소를 찾지 못했습니다.'}, status=404)
-            
-            # 위치 리스트 반환
-            # if len(places['documents']) > 1:
-            #     return Response({'places': places['documents']}, status=200)
 
         # 장소 목록 반환
             return Response({'places' : places['documents']}, status=200)
-            
         return Response(serializer.errors, status=400)
+
+
+# 네이버 블로그 API로 선택된 장소에 대한 게시글 검색
+class BlogPostSearchAPIView(APIView):
+    def post(self, request):
+        place_name = request.data.get('place_name')
+        category = request.data.get('category')
+        if not place_name or not category:
+            return Response({'error' : '장소 이름과 카테고리가 필요합니다.'}, status=400)
+
+        blog_posts = naver_blog_search(place_name, category)
+        if not blog_posts:
+            return Response({'error' : '블로그 게시글을 찾을 수 없습니다.'}, status=400)
+        
+        # 1년 이내 게시글만 필터링
+        filtered_posts = filter_posts(blog_posts)
+        return Response({'blog_posts' : filtered_posts}, status=200)
 
 
 class MapSaveAPIView(APIView):

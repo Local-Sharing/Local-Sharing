@@ -1,7 +1,7 @@
 import requests
 from openai import OpenAI
 from django.shortcuts import render, get_object_or_404
-from LocalSharing.config import KAKAO_REST_API_KEY, OPEN_AI_KEY
+from LocalSharing.config import KAKAO_REST_API_KEY, OPEN_AI_KEY, NAVER_CLIENT_ID, NAVER_CLIENT_SECRET
 from datetime import datetime, timedelta
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
@@ -17,6 +17,26 @@ def kakao_rest_api(region, category):
     params = {
         'query': f'{region} {category}',
         'size': 10
+    }
+
+    response = requests.get(url, headers=headers, params=params)
+    if response.status_code == 200:
+        return response.json()
+    else:
+        return None
+
+
+# 네이버 블로그 API 호출
+def naver_blog_search(query):
+    url = 'https://openapi.naver.com/v1/search/blog.json'
+    headers = {
+        'X-Naver-Client-Id': NAVER_CLIENT_ID,
+        'X-Naver-Client-Secret': NAVER_CLIENT_SECRET
+    }
+    params = {
+        'query' : query,
+        'dislplay' : 20,    # 한번에 가져올 블로그 게시글 수
+        'sort' : 'sim'  # 정확도 순으로 정렬
     }
 
     response = requests.get(url, headers=headers, params=params)
@@ -51,6 +71,14 @@ def map_search(region, weather, category=None):
 
 
 class MapListAPIView(APIView):
+
+    # 메인 화면 접속 시 서울역 페이지 반환
+    def get(self, request):
+        default_region = '서울역'
+        default_category = 'KTX정차역'
+        places = kakao_rest_api(default_region, default_category)
+        return Response({'places' : places['documents']}, status=200)
+
     # 검색
     def post(self, request):
         serializer = MapSearchSerializer(data = request.data)

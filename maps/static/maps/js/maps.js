@@ -38,4 +38,32 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   initializeMap(); // 페이지 로드 시 지도 초기화
+
+  // 검색 버튼과 닫기 버튼, 오버레이 처리
+  const searchBtn = document.getElementById("search-btn");
+  const searchContainer = document.getElementById("search-container");
+  const searchCloseBtn = document.getElementById("search-close-btn");
+  const overlay = document.getElementById("overlay");
+
+  searchBtn.addEventListener("click", function () {
+    searchContainer.style.display = "block";  // 검색창을 화면에 표시
+    searchContainer.classList.add("active");
+    overlay.classList.add("active");
+  });
+
+  searchCloseBtn.addEventListener("click", function () {
+    searchContainer.classList.remove("active");
+    overlay.classList.remove("active");
+    setTimeout(function () {
+      searchContainer.style.display = "none";  // 검색창을 화면에서 숨김
+    }, 300);  // 검색창 슬라이딩 애니메이션이 끝난 후에 숨김 처리
+  });
+
+  overlay.addEventListener("click", function () {
+    searchContainer.classList.remove("active");
+    overlay.classList.remove("active");
+    setTimeout(function () {
+      searchContainer.style.display = "none";  // 검색창을 화면에서 숨김
+    }, 300);  // 검색창 슬라이딩 애니메이션이 끝난 후에 숨김 처리
+  });
 });

@@ -1,29 +1,80 @@
-/* 기본 레이아웃 설정 */
+/* 기본 스타일 설정 */
 .container {
     display: flex;
     height: 100vh;
+    position: relative;
 }
 
 .navbar {
     width: 200px;
     background-color: #f8f9fa;
     padding: 10px;
+    position: relative;
+    z-index: 1002; /* navbar가 검색창 위에 위치하도록 z-index 설정 */
 }
 
 .navbar ul {
     list-style-type: none;
     padding: 0;
+    margin: 0;
 }
 
 .navbar ul li {
     margin-bottom: 10px;
+    cursor: pointer;
 }
 
-.navbar ul li a {
-    text-decoration: none;
-    color: #333;
+/* 검색창 스타일 */
+#search-container {
+    position: absolute;
+    top: 0;
+    left: 200px; /* navbar와 검색창이 겹치지 않도록 검색창을 오른쪽으로 이동 */
+    width: 0;
+    height: 100%;
+    background-color: #fff;
+    box-shadow: 2px 0 5px rgba(0, 0, 0, 0.5);
+    padding: 20px;
+    transition: width 0.5s ease;
+    z-index: 1001;
+    overflow: hidden;
+    display: none; /* 기본적으로 화면에 보이지 않음 */
 }
 
+#search-container.active {
+    width: calc(50% - 200px); /* 검색창이 navbar를 제외한 전체 화면을 차지하도록 설정 */
+}
+
+#search-input {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 10px;
+}
+
+#search-close-btn {
+    padding: 10px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    cursor: pointer;
+}
+
+/* 어두운 배경 스타일 */
+#overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: none;
+    z-index: 1000;
+}
+
+#overlay.active {
+    display: block;
+}
+
+/* 지도 영역 스타일 */
 .map-container {
     flex: 1;
     position: relative;

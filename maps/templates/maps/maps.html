@@ -1,1 +1,23 @@
-{% extends "base.html" %} {% block content %} {% endblock content %}
+{% extends "base.html" %}
+{% load static %}
+{% block head %}
+    <link rel="stylesheet" href="{% static "maps/css/maps.css" %}">
+    <script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey={{ kakao_api_key }}"></script>
+    <script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey={{ kakao_api_key }} libraries=LIBRARY"></script>
+    <script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey={{ kakao_api_key }} libraries=services,clusterer,drawing"></script>
+{% endblock head %}
+{% block content %} 
+    <div class="container">
+        <nav class="navbar">
+            <ul>
+                <li><a href="#home">Home</a></li>
+                <li><a href="#location1">Location 1</a></li>
+                <li><a href="#location2">Location 2</a></li>
+            </ul>
+        </nav>
+        <div class="map-container">
+            <div id="map"></div>
+        </div>
+    </div>
+    <script src="{% static "maps/js/maps.js" %}"></script>
+{% endblock content %}

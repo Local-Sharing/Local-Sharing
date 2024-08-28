@@ -1,7 +1,8 @@
 import requests
 from openai import OpenAI
 from django.shortcuts import render, get_object_or_404
-from LocalSharing.config import KAKAO_REST_API_KEY, OPEN_AI_KEY, NAVER_CLIENT_ID, NAVER_CLIENT_SECRET
+from django.views.generic import TemplateView
+from LocalSharing.config import KAKAO_REST_API_KEY, OPEN_AI_KEY, NAVER_CLIENT_ID, NAVER_CLIENT_SECRET, KAKAO_JAVASCRIPT_API_KEY
 from datetime import datetime, timedelta
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
@@ -104,6 +105,10 @@ class MapListAPIView(APIView):
             
         return Response(serializer.errors, status=400)
 
+def map_page(request):
+    return render(request, 'maps/maps.html', {
+        'kakao_api_key': KAKAO_JAVASCRIPT_API_KEY
+    })
 
 class MapSaveAPIView(APIView):
     permission_classes = [IsAuthenticated]

@@ -15,7 +15,7 @@ services:
       - .env
 
   ngnix:
-    image : ngnix:latest
+    image : nginx:latest
     ports:
       - "80:80"
     volumes:

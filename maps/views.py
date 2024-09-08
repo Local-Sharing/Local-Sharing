@@ -1,13 +1,21 @@
 import requests
 from openai import OpenAI
 from django.shortcuts import render, get_object_or_404
-from LocalSharing.config import KAKAO_REST_API_KEY, OPEN_AI_KEY, NAVER_CLIENT_ID, NAVER_CLIENT_SECRET
+# from LocalSharing.config import KAKAO_REST_API_KEY, OPEN_AI_KEY, NAVER_CLIENT_ID, NAVER_CLIENT_SECRET
 from datetime import datetime, timedelta
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from maps.models import Map, MapLikeUser, WeatherCategoryMapping
 from maps.serializers import MapSerializer, MapSearchSerializer, MapLikeUserSerializer
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
+KAKAO_REST_API_KEY = os.getenv('KAKAO_REST_API_KEY')
+NAVER_CLIENT_ID = os.getenv('NAVER_CLIENT_ID')
+NAVER_CLIENT_SECRET = os.getenv('NAVER_CLIENT_SECRET')
 
 
 # KAKAO API를 사용하여 위치 정보 반환

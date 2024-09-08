@@ -14,5 +14,5 @@ COPY . /app/
 EXPOSE 8000
 
 # 서버 실행 명령어
-CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
-# CMD ["gunicorn", "--bind", "0.0.0.0:8000", "LocalSharing.wsgi:application"]
+# CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
+CMD ["gunicorn", "--bind", "0.0.0.0:8000", "LocalSharing.wsgi:application"]

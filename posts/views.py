@@ -108,6 +108,8 @@ class PostDetailAPIView(APIView):
 
 
 class CommentAPIView(APIView):
+    permission_classes = [IsAuthenticatedOrReadOnly]
+    
     def get_object(self, comment_id):
         return get_object_or_404(Comment, pk=comment_id)
     

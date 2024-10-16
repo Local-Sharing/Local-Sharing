@@ -9,6 +9,7 @@ from rest_framework.response import Response
 from maps.models import Map, MapLikeUser, WeatherCategoryMapping
 from maps.serializers import MapSerializer, MapSearchSerializer, MapLikeUserSerializer
 import os
+from django.core.cache import cache
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -131,12 +132,22 @@ class BlogPostSearchAPIView(APIView):
         if not place_name or not category:
             return Response({'error' : '장소 이름과 카테고리가 필요합니다.'}, status=400)
 
+        # 캐시 키 생성
+        cache_key = f'blog_posts_{place_name}_{category}'
+        cached_data = cache.get(cache_key)
+
+        # 캐시된 데이터가 있는 경우 반환
+        if cached_data:
+            return Response({'blog_posts' : cached_data}, status=200)
+        
+        # 캐시된 데이터가 없으면 API 호출
         blog_posts = naver_blog_search(place_name, category)
         if not blog_posts:
             return Response({'error' : '블로그 게시글을 찾을 수 없습니다.'}, status=400)
         
         # 1년 이내 게시글만 필터링
         filtered_posts = filter_posts(blog_posts)
+        cache.set(cache_key, filter_posts, timeout=60)
         return Response({'blog_posts' : filtered_posts}, status=200)
 
 

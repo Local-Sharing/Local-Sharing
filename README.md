@@ -11,7 +11,7 @@
 ## Tech Stack
 - **Programming Language :** Python
 - **Frameworks :** Django, Django REST Framework (DRF)
-- **Database :** PostgreSQL
+- **Database :** PostgreSQL, Redis
 - **Deployment :** AWS EC2, Docker
 
 ## API Documentation
